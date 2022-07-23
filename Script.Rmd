@@ -1,0 +1,458 @@
+---
+title: "MOURA_LMF2021"
+author: "Cândido-Sobrinho, S.A."
+date: "24/09/2021"
+output: html_document
+---
+
+This work is licensed under a [Creative Commons Attribution 4.0 International License][cc-by].
+
+It is made public available at: https://github.com/candidosobrinhosa/MOURA_LMF_2022
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 1 Loading libraries
+```{r}
+base::library(tidyverse)
+base::library(FactoMineR)
+base::library(factoextra)
+base::library(ggpubr)
+base::library(ape)
+base::library(svglite)
+base::library(dendextend)
+```
+
+
+## 2 Initializing lists
+```{r}
+base::list() -> datasets
+base::list() -> pcas
+base::list() -> dendrograms
+```
+
+
+## 3 Loading data
+```{r}
+utils::read.csv("./data/Crambe_Revision1.csv", sep = ";", dec = ".") -> datasets$crambe
+utils::read.csv("./data/Raph_Revision1.csv", sep = ";", dec = ".")   -> datasets$raphan
+```
+
+### 3.1 Scaling data
+```{r}
+base::cbind(datasets$crambe[1:3],scale(datasets$crambe[4:46])) -> datasets$crambe_scaled
+base::cbind(datasets$raphan[1:3],scale(datasets$raphan[4:46])) -> datasets$raphan_scaled
+```
+
+### 3.2 Subsetting data
+```{r}
+base::list() -> subsets
+
+datasets$crambe_scaled |> filter(DAY == 7)  |> select(!c(DAY)) -> subsets$crambe_scaled_7
+datasets$crambe_scaled |> filter(DAY == 14) |> select(!c(DAY)) -> subsets$crambe_scaled_14
+datasets$crambe_scaled |> filter(DAY == 21) |> select(!c(DAY)) -> subsets$crambe_scaled_21
+
+datasets$raphan_scaled |> filter(DAY == 7)  |> select(!c(DAY)) -> subsets$raphan_scaled_7
+datasets$raphan_scaled |> filter(DAY == 14) |> select(!c(DAY)) -> subsets$raphan_scaled_14
+datasets$raphan_scaled |> filter(DAY == 21) |> select(!c(DAY)) -> subsets$raphan_scaled_21
+```
+
+
+## 4 PCAs
+
+### 4.1 Assessing number of PCs
+```{r}
+FactoMineR::PCA(datasets$crambe_scaled,
+    scale = FALSE,
+    ncp = 10,
+    quali.sup = 1:3,
+    graph = F) -> pcas$crambe
+
+FactoMineR::PCA(datasets$raphan_scaled,
+    scale = FALSE,
+    ncp = 10,
+    quali.sup = 1:3,
+    graph = F) -> pcas$raphan
+```
+
+#### Extracting eigenvalues dataframes.
+```{r}
+base::as.data.frame(base::cbind(pcas$crambe[["eig"]], c(1:43))) -> pcas$crambe_eig
+base::as.data.frame(base::cbind(pcas$crambe[["eig"]], c(1:43))) -> pcas$raphan_eig
+```
+
+#### Plotting
+
+#### Crambe
+```{r}
+pcas$crambe_eig |>
+
+  ggpubr::ggline(x="V4", y="eigenvalue",
+         xlab="Number of Principal Components (PCs)",
+         ylab="Eigenvalues", color = "black") +
+
+  ggpubr::rotate_x_text()
+
+  ggplot2::ggsave("./results/FigS1_crambe_eigenvalues.svg", device="svg", scale=2, width = 3, height = 2)
+```
+
+
+#### Raphanus
+```{r}
+pcas$raphan_eig |>
+
+  ggpubr::ggline(x="V4", y="eigenvalue",
+         xlab="Number of Principal Components (PCs)",
+         ylab="Eigenvalues", color = "black") +
+
+  ggpubr::rotate_x_text()
+
+  ggplot2::ggsave("./results/FigS2_raphan_eigenvalues.svg", device="svg", scale=2, width = 3, height = 2)
+```
+
+### 4.2 PCAs
+```{r}
+FactoMineR::PCA(subsets$crambe_scaled_7,
+    scale = FALSE,
+    ncp = 4,
+    quali.sup = 1:2,
+    graph = F) -> pcas$crambe7
+
+FactoMineR::PCA(subsets$crambe_scaled_14,
+    scale = FALSE,
+    ncp = 4,
+    quali.sup = 1:2,
+    graph = F) -> pcas$crambe14
+
+FactoMineR::PCA(subsets$crambe_scaled_21,
+    scale = FALSE,
+    ncp = 4,
+    quali.sup = 1:2,
+    graph = F) -> pcas$crambe21
+
+FactoMineR::PCA(subsets$raphan_scaled_7,
+    scale = FALSE,
+    ncp = 4,
+    quali.sup = 1:2,
+    graph = F) -> pcas$raphan7
+
+FactoMineR::PCA(subsets$raphan_scaled_14,
+    scale = FALSE,
+    ncp = 4,
+    quali.sup = 1:2,
+    graph = F) -> pcas$raphan14
+
+FactoMineR::PCA(subsets$raphan_scaled_21,
+    scale = FALSE,
+    ncp = 4,
+    quali.sup = 1:2,
+    graph = F) -> pcas$raphan21
+```
+
+
+#### PCAs Biplot (per day); Crambe.
+```{r}
+factoextra::fviz_pca_biplot(pcas$crambe7, 
+                geom.ind = "point",
+                fill.ind = subsets$crambe_scaled_7$TREATMENT,
+                col.ind = "black",
+                pointshape = 21, pointsize = 4,
+                addEllipses = TRUE,
+                repel = FALSE,
+                col.var = "contrib",
+                gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                title = "PCA Biplot",
+                legend.title = list(fill = "Treatments", color = "Contribution")
+                )
+
+ggplot2::ggsave("./Results/Fig1_crambe7.svg", 
+       device="svg",
+       scale=2,
+       width = 3,
+       height = 2
+       )
+
+factoextra::fviz_pca_biplot(pcas$crambe14, 
+                geom.ind = "point",
+                fill.ind = subsets$crambe_scaled_14$TREATMENT,
+                col.ind = "black",
+                pointshape = 21, pointsize = 4,
+                addEllipses = TRUE,
+                repel = FALSE,
+                col.var = "contrib",
+                gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                title = "PCA Biplot",
+                legend.title = list(fill = "Treatments", color = "Contribution")
+                )
+
+ggplot2::ggsave("./Results/Fig_crambe14.svg", 
+       device="svg",
+       scale=2,
+       width = 3,
+       height = 2
+       )
+
+factoextra::fviz_pca_biplot(pcas$crambe21, 
+                geom.ind = "point",
+                fill.ind = subsets$crambe_scaled_21$TREATMENT,
+                col.ind = "black",
+                pointshape = 21, pointsize = 4,
+                addEllipses = TRUE,
+                repel = FALSE,
+                col.var = "contrib",
+                gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                title = "PCA Biplot",
+                legend.title = list(fill = "Treatments", color = "Contribution")
+                )
+
+ggplot2::ggsave("./Results/Fig_crambe21.svg", 
+       device="svg",
+       scale=2,
+       width = 3,
+       height = 2
+       )
+```
+
+#### 4.4 Raphanus
+```{r}
+factoextra::fviz_pca_biplot(pcas$raphan7, 
+                geom.ind = "point",
+                fill.ind = subsets$raphan_scaled_7$TREATMENT,
+                col.ind = "black",
+                pointshape = 21, pointsize = 4,
+                addEllipses = TRUE,
+                repel = FALSE,
+                col.var = "contrib",
+                gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                title = "PCA Biplot",
+                legend.title = list(fill = "Treatments", color = "Contribution")
+                )
+
+ggplot2::ggsave("./Results/Fig_raphan7.svg", 
+       device="svg",
+       scale=2,
+       width = 3,
+       height = 2
+       )
+
+factoextra::fviz_pca_biplot(pcas$raphan14, 
+                geom.ind = "point",
+                fill.ind = subsets$raphan_scaled_14$TREATMENT,
+                col.ind = "black",
+                pointshape = 21, pointsize = 4,
+                addEllipses = TRUE,
+                repel = FALSE,
+                col.var = "contrib",
+                gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                title = "PCA Biplot",
+                legend.title = list(fill = "Treatments", color = "Contribution")
+                )
+
+ggplot2::ggsave("./Results/Fig_raphan14.svg", 
+       device="svg",
+       scale=2,
+       width = 3,
+       height = 2
+       )
+
+factoextra::fviz_pca_biplot(pcas$raphan21, 
+                geom.ind = "point",
+                fill.ind = subsets$raphan_scaled_21$TREATMENT,
+                col.ind = "black",
+                pointshape = 21, pointsize = 4,
+                addEllipses = TRUE,
+                repel = FALSE,
+                col.var = "contrib",
+                gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                title = "PCA Biplot",
+                legend.title = list(fill = "Treatments", color = "Contribution")
+                )
+
+ggplot2::ggsave("./Results/Fig_raphan21.svg", 
+       device="svg",
+       scale=2,
+       width = 3,
+       height = 2
+       )
+```
+
+#### 4.5 Variable Contributions
+
+#### Crambe
+```{r}
+factoextra::fviz_contrib(pcas$crambe7,
+             choice = "var",
+             axes = 1:2,
+             top = 20,
+             title="Contribution of variables to PC1 and PC2")
+
+ggplot2::ggsave("./Results/Fig_crambe7_contrib.svg",
+       device="svg"
+       )
+
+factoextra::fviz_contrib(pcas$crambe14,
+             choice = "var",
+             axes = 1:2,
+             top = 20,
+             title="Contribution of variables to PC1 and PC2")
+
+ggplot2::ggsave("./Results/Fig_crambe14_contrib.svg",
+       device="svg"
+       )
+
+factoextra::fviz_contrib(pcas$crambe21,
+             choice = "var",
+             axes = 1:2,
+             top = 20,
+             title="Contribution of variables to PC1 and PC2")
+
+ggplot2::ggsave("./Results/Fig_crambe21_contrib.svg",
+       device="svg"
+       )
+```
+
+#### Raphanus
+```{r}
+factoextra::fviz_contrib(pcas$raphan7,
+             choice = "var",
+             axes = 1:2,
+             top = 20,
+             title="Contribution of variables to PC1 and PC2")
+
+ggplot2::ggsave("./Results/Fig_raphan7_contrib.svg",
+       device="svg"
+       )
+
+factoextra::fviz_contrib(pcas$raphan14,
+             choice = "var",
+             axes = 1:2,
+             top = 20,
+             title="Contribution of variables to PC1 and PC2")
+
+ggplot2::ggsave("./Results/Fig_raphan14_contrib.svg",
+       device="svg"
+       )
+
+factoextra::fviz_contrib(pcas$raphan21,
+             choice = "var",
+             axes = 1:2,
+             top = 20,
+             title="Contribution of variables to PC1 and PC2")
+
+ggplot2::ggsave("./Results/Fig_raphan21_contrib.svg",
+       device="svg"
+       )
+```
+
+
+### 5 Dendrograms
+
+#### 5.1 Generating matrices
+```{r}
+base::as.matrix(subsets$crambe_scaled_7[,-(1:2)] ) -> dendrograms$crambe7
+base::as.matrix(subsets$crambe_scaled_14[,-(1:2)] ) -> dendrograms$crambe14
+base::as.matrix(subsets$crambe_scaled_21[,-(1:2)] ) -> dendrograms$crambe21
+
+base::as.matrix(subsets$raphan_scaled_7[,-(1:2)] ) -> dendrograms$raphan7
+base::as.matrix(subsets$raphan_scaled_14[,-(1:2)] ) -> dendrograms$raphan14
+base::as.matrix(subsets$raphan_scaled_21[,-(1:2)] ) -> dendrograms$raphan21
+```
+
+
+#### 5.2 Calculating distances
+```{r}
+stats::hclust(stats::dist(dendrograms$crambe7, method = "euclidean"), method = "ward.D2")  -> dendrograms$crambe7_hc
+stats::hclust(stats::dist(dendrograms$crambe14, method = "euclidean"), method = "ward.D2") -> dendrograms$crambe14_hc
+stats::hclust(stats::dist(dendrograms$crambe21, method = "euclidean"), method = "ward.D2") -> dendrograms$crambe21_hc
+
+stats::hclust(stats::dist(dendrograms$crambe7, method = "euclidean"), method = "ward.D2")  -> dendrograms$raphan7_hc
+stats::hclust(stats::dist(dendrograms$crambe14, method = "euclidean"), method = "ward.D2") -> dendrograms$raphan14_hc
+stats::hclust(stats::dist(dendrograms$crambe21, method = "euclidean"), method = "ward.D2") -> dendrograms$raphan21_hc
+```
+
+#### Injecting labels into dendrograms
+```{r}
+subsets$crambe_scaled_7$REPLICATE  -> dendrograms$crambe7_hc$labels
+subsets$crambe_scaled_14$REPLICATE -> dendrograms$crambe14_hc$labels
+subsets$crambe_scaled_21$REPLICATE -> dendrograms$crambe21_hc$labels
+
+subsets$raphan_scaled_7$REPLICATE  -> dendrograms$raphan7_hc$labels
+subsets$raphan_scaled_14$REPLICATE -> dendrograms$raphan14_hc$labels
+subsets$raphan_scaled_21$REPLICATE -> dendrograms$raphan21_hc$labels
+```
+
+#### 5.3 Plotting (as phylo, important to check clustering)
+```{r}
+svglite::svglite(filename = "./results/HC_crambe7.svg")
+graphics::plot(ape::as.phylo(dendrograms$crambe7_hc), type = "unrooted", no.margin = T)
+grDevices::dev.off()
+
+svglite::svglite(filename = "./results/HC_crambe14.svg")
+graphics::plot(as.phylo(dendrograms$crambe14_hc), type = "unrooted", no.margin = T)
+grDevices::dev.off()
+
+svglite::svglite(filename = "./results/HC_crambe21.svg")
+graphics::plot(as.phylo(dendrograms$crambe21_hc), type = "unrooted", no.margin = T)
+grDevices::dev.off()
+
+svglite::svglite(filename = "./results/HC_raphan7.svg")
+graphics::plot(as.phylo(dendrograms$raphan7_hc), type = "unrooted", no.margin = T)
+grDevices::dev.off()
+
+svglite::svglite(filename = "./results/HC_raphan14.svg")
+graphics::plot(as.phylo(dendrograms$raphan14_hc), type = "unrooted", no.margin = T)
+grDevices::dev.off()
+
+svglite::svglite(filename = "./results/HC_raphan21.svg")
+graphics::plot(as.phylo(dendrograms$raphan21_hc), type = "unrooted", no.margin = T)
+grDevices::dev.off()
+```
+
+#### 5.4 Classical visualization
+```{r}
+svglite::svglite(filename = "./results/HC_crambe7_2.svg")
+dendrograms$crambe7_hc |>
+  stats::as.dendrogram() |>
+  dendextend::set("branches_k_color", k = 3) |>
+  graphics::plot()
+grDevices::dev.off()
+
+svglite::svglite(filename = "./results/HC_crambe14_2.svg")
+dendrograms$crambe14_hc |>
+  stats::as.dendrogram() |>
+  dendextend::set("branches_k_color", k = 3) |>
+  graphics::plot()
+grDevices::dev.off()
+
+svglite::svglite(filename = "./results/HC_crambe21_2.svg")
+dendrograms$crambe21_hc |>
+  stats::as.dendrogram() |>
+  dendextend::set("branches_k_color", k = 3) |>
+  graphics::plot()
+grDevices::dev.off()
+
+
+svglite::svglite(filename = "./results/HC_raphan7_2.svg")
+dendrograms$raphan7_hc |>
+  stats::as.dendrogram() |>
+  dendextend::set("branches_k_color", k = 3) |>
+  graphics::plot()
+grDevices::dev.off()
+
+svglite::svglite(filename = "./results/HC_raphan14_2.svg")
+dendrograms$raphan14_hc |>
+  stats::as.dendrogram() |>
+  dendextend::set("branches_k_color", k = 3) |>
+  graphics::plot()
+grDevices::dev.off()
+
+svglite::svglite(filename = "./results/HC_raphan21_2.svg")
+dendrograms$raphan21_hc |>
+  stats::as.dendrogram() |>
+  dendextend::set("branches_k_color", k = 3) |>
+  graphics::plot()
+grDevices::dev.off()
+```
+
